@@ -3,7 +3,7 @@ description: >-
   The CoinGecko for AI. Dart client for AI model benchmarks, pricing
   comparison, cost estimation, and agent discovery. Query structured data
   on 300+ models across 50+ providers.
-version: 0.1.0
+version: 0.1.1
 homepage: https://benchgecko.ai
 repository: https://github.com/BenchGecko/benchgecko-dart
 
