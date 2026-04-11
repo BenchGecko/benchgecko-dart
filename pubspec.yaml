@@ -1,17 +1,19 @@
 name: benchgecko
-description: >-
-  The CoinGecko for AI. Dart client for AI model benchmarks, pricing
-  comparison, cost estimation, and agent discovery. Query structured data
-  on 300+ models across 50+ providers.
-version: 0.1.1
+description: Official Dart SDK for BenchGecko, the data layer of the AI economy. Query thousands of AI models with cross-provider pricing, benchmark scores, and live changelog updates.
+version: 1.0.0
 homepage: https://benchgecko.ai
 repository: https://github.com/BenchGecko/benchgecko-dart
-
-environment:
-  sdk: ^3.0.0
-
+documentation: https://benchgecko.ai/api-docs
+issue_tracker: https://github.com/BenchGecko/benchgecko-dart/issues
 topics:
   - ai
-  - benchmarks
+  - benchmark
   - llm
+  - api
   - machine-learning
+
+environment:
+  sdk: ^3.2.0
+
+dependencies:
+  http: ^1.2.0

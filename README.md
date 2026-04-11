@@ -1,8 +1,10 @@
 # BenchGecko for Dart
 
-**The CoinGecko for AI.** Dart client for accessing AI model benchmarks, comparing language models, estimating inference costs, and discovering AI agents.
+Official Dart/Flutter SDK for [BenchGecko](https://benchgecko.ai), the data layer of the AI economy.
 
-BenchGecko tracks 300+ AI models across 50+ providers with real benchmark scores, latency metrics, and transparent pricing. This package gives you structured access to that data in idiomatic Dart with strong typing, null safety, and zero external dependencies.
+Thousands of models with cross-provider pricing and daily price history. Hundreds of companies with valuations, funding timelines, and revenue estimates. Benchmark scores, developer adoption signals, agent leaderboards, and a changelog that captures every price drop, every launch, every deprecation as it happens.
+
+If it moved in AI today, it is already on BenchGecko.
 
 ## Installation
 
@@ -10,7 +12,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  benchgecko: ^0.1.0
+  benchgecko: ^1.0.0
 ```
 
 Then run `dart pub get`.
@@ -20,114 +22,79 @@ Then run `dart pub get`.
 ```dart
 import 'package:benchgecko/benchgecko.dart';
 
-void main() {
-  // Look up any model
-  final model = BenchGecko.getModel('claude-3.5-sonnet');
-  print(model?.name);       // Claude 3.5 Sonnet
-  print(model?.provider);   // Anthropic
-  print(model?.score('MMLU'));  // 88.7
+Future<void> main() async {
+  final client = BenchGeckoClient();
 
-  // List all tracked models
-  for (final id in BenchGecko.listModels()) {
-    print(id);
+  // List top models by score
+  final models = await client.getModels(sort: 'score', limit: 10);
+  for (final model in models) {
+    print('${model['name']} (${model['provider']})');
   }
+
+  client.dispose();
 }
 ```
 
-## Comparing Models
+## API Key
 
-The comparison engine returns strongly-typed results with benchmark differences and pricing ratios. Positive diff values mean the first model scores higher:
+BenchGecko is free to query without an API key for light usage. For higher rate limits, pass an API key:
 
 ```dart
-final result = BenchGecko.compareModels('gpt-4o', 'claude-3.5-sonnet');
-if (result != null) {
-  print('Cheaper: ${result.cheaper}');       // gpt-4o
-  print('Cost ratio: ${result.costRatio}');  // 0.69
-
-  result.benchmarkDiff.forEach((bench, diff) {
-    if (diff != null) {
-      final winner = diff >= 0 ? 'GPT-4o' : 'Claude 3.5 Sonnet';
-      print('$bench: $winner by ${diff.abs()} pts');
-    }
-  });
-}
+final client = BenchGeckoClient(apiKey: 'your_api_key');
 ```
 
-## Cost Estimation
-
-Estimate inference costs before committing to a provider. All prices are per million tokens:
+## Model Lookup
 
 ```dart
-final cost = BenchGecko.estimateCost(
+final model = await client.getModel('claude-3-5-sonnet');
+print(model['name']);
+print(model['pricing']);
+print(model['benchmarks']);
+```
+
+## Cross-Provider Comparison
+
+Compare two to six models side by side with benchmark scores and pricing delta:
+
+```dart
+final result = await client.compare([
   'gpt-4o',
-  inputTokens: 2000000,
-  outputTokens: 500000,
-);
-
-if (cost != null) {
-  print('Input:  \$${cost.inputCost}');   // $5.0
-  print('Output: \$${cost.outputCost}');  // $5.0
-  print('Total:  \$${cost.total}');       // $10.0
-}
+  'claude-3-5-sonnet',
+  'gemini-2-0-flash',
+]);
+print(result);
 ```
 
-## Finding the Right Model
-
-Filter models by benchmark performance with type-safe results:
+## Benchmark Catalog
 
 ```dart
-// All models scoring 87+ on MMLU, sorted by score
-final topReasoners = BenchGecko.topModels('MMLU', minScore: 87.0);
-for (final model in topReasoners) {
-  print('${model.name}: ${model.score("MMLU")}');
-}
+// All benchmarks
+final all = await client.getBenchmarks();
 
-// Cheapest model above a quality threshold
-final budgetPick = BenchGecko.cheapestAbove('MMLU', 85.0);
-if (budgetPick != null) {
-  print('${budgetPick.name} at \$${budgetPick.costPerMillion}/M tokens');
-}
+// Filter by category
+final reasoning = await client.getBenchmarks(category: 'reasoning');
 ```
 
-## Benchmark Categories
-
-BenchGecko organizes 40+ benchmarks into categories covering reasoning, coding, math, instruction following, safety, multimodal, multilingual, and long context evaluation:
+## Filtering Models
 
 ```dart
-BenchGecko.benchmarkCategories().forEach((key, category) {
-  print('${category.name}: ${category.benchmarks.join(", ")}');
-  print('  ${category.description}');
-});
-```
+// Open-source models only
+final openModels = await client.getModels(openSource: true);
 
-## Built-in Model Catalog
+// Models from a specific provider
+final anthropicModels = await client.getModels(provider: 'anthropic');
 
-The package ships with a curated catalog of major models from OpenAI, Anthropic, Google, Meta, Mistral, and DeepSeek. Each entry includes benchmark scores, parameter counts, context window sizes, and per-token pricing. All data is compiled into the package with zero runtime dependencies.
-
-```dart
-final model = BenchGecko.getModel('deepseek-v3');
-print(model?.parameters);      // 671.0
-print(model?.contextWindow);   // 128000
-print(model?.costPerMillion);  // 0.685
-```
-
-## Type Safety
-
-Every class uses Dart null safety. Model lookups return `Model?`, cost estimates return `CostEstimate?`, and comparisons return `ComparisonResult?`. Benchmark scores use `double?` to distinguish missing data from zero scores.
-
-```dart
-final model = BenchGecko.getModel('unknown-model');
-// model is null -- no runtime exceptions
-
-final score = BenchGecko.getModel('gpt-4o')?.score('NonExistentBench');
-// score is null -- benchmark not tracked for this model
+// Sort options: score, price, context, recent
+final cheapest = await client.getModels(sort: 'price', limit: 20);
 ```
 
 ## Resources
 
-- [BenchGecko](https://benchgecko.ai) -- Full platform with interactive comparisons
-- [Source Code](https://github.com/BenchGecko/benchgecko-dart) -- Contributions welcome
+- [BenchGecko](https://benchgecko.ai) - Full platform
+- [API Docs](https://benchgecko.ai/api-docs) - REST API reference
+- [Brand](https://benchgecko.ai/brand) - Press kit and brand voice
+- [Source](https://github.com/BenchGecko/benchgecko-dart) - Contributions welcome
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License.
